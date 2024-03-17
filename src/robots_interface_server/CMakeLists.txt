@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_service_files(
   FILES
   GetPosition.srv
+  MoveToPosition.srv
 )
 
 generate_messages(

@@ -5,6 +5,7 @@
 #include <mutex>
 
 #include "robots_interface_server/GetPosition.h"
+#include "robots_interface_server/MoveToPosition.h"
 
 class RobotInterface
 {
@@ -14,6 +15,7 @@ public:
     _goalSubscriber = _nodeHandle.subscribe(_robotName + "/move_to", 10, &RobotInterface::goalCallback, this);
     _positionPublisher = _nodeHandle.advertise<nav_msgs::Odometry>(_robotName + "/current_position", 10);
     _positionService = _nodeHandle.advertiseService(_robotName + "/get_position", &RobotInterface::getPosition, this);
+    _moveToPositionService = _nodeHandle.advertiseService(_robotName + "/move_to_position", &RobotInterface::moveToPosition, this);
   }
 
   void goalCallback(const geometry_msgs::PoseStamped::ConstPtr& goal_msg) {
@@ -35,11 +37,21 @@ public:
     return true;
   }
 
+  bool moveToPosition(robots_interface_server::MoveToPosition::Request& request,
+                      robots_interface_server::MoveToPosition::Response& response) {
+    std::lock_guard<std::mutex> lock(_positionMutex);
+    _currentPosition.pose.pose = request.pose.pose;
+    _positionPublisher.publish(_currentPosition);
+
+    return true;
+  }
+
 private:
   ros::NodeHandle _nodeHandle;
   ros::Subscriber _goalSubscriber;
   ros::Publisher _positionPublisher;
   ros::ServiceServer _positionService;
+  ros::ServiceServer _moveToPositionService;
   nav_msgs::Odometry _currentPosition;
   std::string _robotName;
   std::mutex _positionMutex;
